@@ -1,0 +1,364 @@
+/* =========================================================
+   HERO — video controllato dallo scroll (.tour)
+   Lunghezza dello scroll: --tour-length (280vh desktop, 230vh mobile).
+   ========================================================= */
+
+.tour {
+  --tour-length: 280vh;
+  position: relative;
+  height: var(--tour-length);
+  background: var(--c-dark);
+  outline: none;
+}
+
+.tour__stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100lvh; /* iOS: altezza stabile, non cambia con la barra di Safari */
+  overflow: hidden;
+  background: var(--c-dark);
+  isolation: isolate;
+}
+
+.tour__poster,
+.tour__poster img,
+.tour__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+.tour__poster img { display: block; }
+
+.tour__video {
+  opacity: 0;
+  transition: opacity .6s var(--ease);
+  pointer-events: none;
+  background: transparent;
+}
+.tour__video.is-ready { opacity: 1; }
+
+/* Nasconde il pulsante play nativo di iOS */
+.tour__video::-webkit-media-controls,
+.tour__video::-webkit-media-controls-start-playback-button,
+.tour__video::-webkit-media-controls-panel {
+  display: none !important; /* override dei controlli nativi WebKit */
+  -webkit-appearance: none;
+}
+
+/* Sfumatura scura dietro i testi: garantisce il contrasto 4.5:1 in ogni fotogramma */
+.tour__shade,
+.tour__shade-end {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.tour__shade {
+  --shade: 1;
+  opacity: var(--shade);
+  background:
+    /* colonna del testo (fino al ~48% della larghezza): velo ≥ 0,72 → testo bianco ≥ 4.5:1 anche sopra i denti */
+    linear-gradient(90deg, rgba(var(--c-dark-rgb), .94) 0%, rgba(var(--c-dark-rgb), .86) 30%, rgba(var(--c-dark-rgb), .74) 48%, rgba(var(--c-dark-rgb), 0) 68%),
+    linear-gradient(0deg, rgba(var(--c-dark-rgb), .75) 0%, rgba(var(--c-dark-rgb), 0) 45%),
+    linear-gradient(180deg, rgba(var(--c-dark-rgb), .55) 0%, rgba(var(--c-dark-rgb), 0) 22%);
+  transition: opacity .2s linear;
+}
+/* Finale: la scena sfuma nel colore della pagina, poi arriva la sezione Sedi */
+.tour__shade-end {
+  --end: 0;
+  opacity: var(--end);
+  background: linear-gradient(0deg, var(--c-dark) 0%, rgba(var(--c-dark-rgb), .75) 40%, rgba(var(--c-dark-rgb), .35) 100%);
+}
+
+/* Avanzamento del download del video */
+.tour__loading {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 5;
+  height: 2px;
+  pointer-events: none;
+  transition: opacity .5s var(--ease);
+}
+.tour__loading span {
+  display: block;
+  height: 100%;
+  background: var(--c-accent);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--load, 0));
+  transition: transform .2s linear;
+}
+.tour__loading.is-done { opacity: 0; }
+.no-js .tour__loading { display: none; }
+
+/* Area dei contenuti: 100svh, così i testi restano sopra la barra di Safari */
+.tour__frame {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 3;
+  height: 100vh;
+  height: 100svh;
+  pointer-events: none;
+}
+
+.tour__scenes {
+  --sc-bottom: clamp(5.5rem, 13svh, 9rem);
+  position: absolute;
+  left: var(--pad-x);
+  bottom: var(--sc-bottom);
+  width: min(38rem, 46vw);
+  height: 0;
+}
+
+/* ---------- Scene di testo ---------- */
+.scene {
+  --in: 0;
+  --out: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  text-shadow: 0 1px 24px rgba(var(--c-dark-rgb), .6);
+}
+.scene:first-child { --in: 1; } /* visibile al primo paint, prima dello script */
+.scene.is-active { pointer-events: auto; }
+
+/* Ogni elemento entra con un piccolo ritardo (--d): tutto guidato dallo scroll */
+.scene > * {
+  --d: 0;
+  --a: clamp(0, (var(--in) - var(--d)) / .72, 1);
+  opacity: calc(var(--a) * (1 - var(--out)));
+  transform: translate3d(0, calc((1 - var(--a)) * 22px - var(--out) * 14px), 0);
+}
+.scene > :nth-child(2) { --d: .1; }
+.scene > :nth-child(3) { --d: .2; }
+.scene > :nth-child(4) { --d: .28; }
+
+.scene__eyebrow {
+  margin: 0 0 1.25rem;
+  font-size: .75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+.scene__title {
+  margin: 0;
+  font-size: clamp(2.6rem, 1.2rem + 4vw, 5.25rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -.04em;
+  color: var(--c-on-dark);
+  text-wrap: balance;
+}
+.scene__title em { font-style: italic; color: var(--c-accent); }
+/* H1 della prima scena: frase lunga, corpo un po' più piccolo */
+.scene--hero .scene__title { font-size: clamp(2.2rem, 1.1rem + 3vw, 4.1rem); line-height: 1.02; }
+.scene__text {
+  max-width: 32rem;
+  margin: 1.25rem 0 0;
+  font-size: clamp(1rem, .95rem + .25vw, 1.1875rem);
+  line-height: 1.55;
+  color: var(--c-on-dark);
+  text-wrap: pretty;
+}
+.scene__cta { display: flex; flex-wrap: wrap; gap: .625rem; margin: 1.75rem 0 0; }
+.scene__cta .btn { text-shadow: none; }
+.scene__cta .btn--ghost { background: rgba(var(--c-dark-rgb), .5); }
+
+/* ---------- Invito a scorrere e "Salta al contenuto" ---------- */
+.tour__hint {
+  --hint: 1;
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--bar-h) + 1.25rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .75rem;
+  margin: 0;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--c-on-dark);
+  opacity: var(--hint);
+  transform: translate3d(-50%, calc((1 - var(--hint)) * 10px), 0);
+  white-space: nowrap;
+}
+.tour__hint i {
+  display: block;
+  width: 1px;
+  height: 2.25rem;
+  background: linear-gradient(var(--c-accent), rgba(var(--c-accent-rgb), 0));
+  transform-origin: 50% 0;
+  animation: hint-line 2.4s var(--ease) infinite;
+}
+@keyframes hint-line {
+  0%   { transform: scaleY(0); opacity: 1; }
+  55%  { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+.no-js .tour__hint { display: none; }
+
+.tour__skip {
+  position: absolute;
+  left: var(--pad-x);
+  bottom: calc(var(--bar-h) + 1rem);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 .25rem;
+  font-size: .8125rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--c-on-dark);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--c-accent-rgb), .7);
+  text-underline-offset: 4px;
+  pointer-events: auto;
+}
+.tour__skip:hover { text-decoration-color: var(--c-accent); }
+
+.tour__unlock {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--bar-h) + 1.25rem);
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+.tour__unlock[hidden] { display: none; }
+
+/* ---------- Barra di avanzamento verticale ---------- */
+.progress {
+  position: absolute;
+  right: calc(clamp(.75rem, 2.4vw, 2.5rem) + var(--safe-r));
+  top: 50%;
+  width: 24px;
+  height: min(40svh, 22rem);
+  transform: translateY(-50%);
+  pointer-events: auto;
+}
+.progress__track { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(var(--c-on-dark-rgb), .18); }
+.progress__fill {
+  --p: 0;
+  position: absolute;
+  inset: 0;
+  background: var(--c-accent);
+  transform-origin: 50% 0;
+  transform: scaleY(var(--p));
+}
+.progress__ticks { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
+.progress__ticks li { position: absolute; left: 0; right: 0; top: calc(var(--at) * 100%); height: 0; }
+.progress__ticks button {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.progress__ticks button::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-dark);
+  box-shadow: 0 0 0 1px rgba(var(--c-on-dark-rgb), .6);
+  transform: translate(-50%, -50%) scale(.7);
+  transition: transform .35s var(--ease), background-color .35s var(--ease), box-shadow .35s var(--ease);
+}
+.progress__ticks button[aria-current="step"]::after {
+  background: var(--c-accent);
+  box-shadow: 0 0 0 4px rgba(var(--c-accent-rgb), .22);
+  transform: translate(-50%, -50%) scale(1);
+}
+.progress__ticks button::before {
+  content: attr(data-label);
+  position: absolute;
+  right: calc(100% + .25rem);
+  top: 50%;
+  padding: .35rem .6rem;
+  border-radius: 6px;
+  background: rgba(var(--c-dark-rgb), .85);
+  color: var(--c-on-dark);
+  font-size: .75rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(4px, -50%);
+  transition: opacity .2s var(--ease), transform .2s var(--ease);
+  pointer-events: none;
+}
+.progress__ticks button:hover::before,
+.progress__ticks button:focus-visible::before { opacity: 1; transform: translate(0, -50%); }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 760px) {
+  .tour { --tour-length: 230vh; }
+  .tour__shade {
+    background:
+      linear-gradient(0deg, rgba(var(--c-dark-rgb), .96) 0%, rgba(var(--c-dark-rgb), .9) 36%, rgba(var(--c-dark-rgb), .72) 54%, rgba(var(--c-dark-rgb), 0) 70%),
+      linear-gradient(180deg, rgba(var(--c-dark-rgb), .6) 0%, rgba(var(--c-dark-rgb), 0) 18%);
+  }
+  .tour__scenes {
+    --sc-bottom: calc(var(--bar-h) + 3.75rem);
+    width: calc(100% - var(--pad-x) * 2 - 1.5rem);
+  }
+  .scene__eyebrow { margin-bottom: .75rem; font-size: .6875rem; letter-spacing: .12em; }
+  .scene__title { font-size: clamp(2.2rem, 10vw, 2.9rem); line-height: 1.02; }
+  .scene--hero .scene__title { font-size: clamp(1.75rem, 7.6vw, 2.25rem); line-height: 1.06; letter-spacing: -.035em; }
+  .scene__text { margin-top: .75rem; font-size: .9375rem; line-height: 1.5; }
+  .scene__cta { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: 1.1rem; }
+  .scene__cta .btn { min-height: 3rem; padding: 0 .75rem; font-size: .875rem; }
+  .scene__cta .btn--primary { grid-column: 1 / -1; }
+  /* su mobile l'invito sta sulla stessa riga di "Salta al contenuto", sotto ai pulsanti */
+  .tour__hint { left: auto; right: var(--pad-x); bottom: calc(var(--bar-h) + .6rem); min-height: 44px; justify-content: center; font-size: .625rem; transform: none; align-items: flex-end; }
+  .tour__hint i { display: none; }
+  .tour__skip { bottom: calc(var(--bar-h) + .6rem); font-size: .75rem; }
+  .progress { right: calc(.35rem + var(--safe-r)); height: 22svh; top: 38%; opacity: .8; }
+  .progress__ticks button { pointer-events: none; }
+}
+/* telefoni molto bassi (es. 320×568): l'etichetta ripete l'H1, la togliamo e compattiamo */
+@media (max-width: 760px) and (max-height: 620px) {
+  .tour__scenes { --sc-bottom: calc(var(--bar-h) + 3.25rem); }
+  .scene--hero .scene__eyebrow { display: none; }
+  .scene--hero .scene__title { font-size: 1.5rem; }
+  .scene__text { margin-top: .5rem; font-size: .875rem; line-height: 1.4; }
+  .scene__cta { margin-top: .75rem; }
+  .scene__cta .btn { min-height: 2.75rem; }
+}
+@media (pointer: coarse) {
+  .progress__ticks button { pointer-events: none; }
+}
+/* schermi bassi (desktop o telefono in orizzontale) */
+@media (max-height: 560px) and (min-width: 761px) {
+  .scene__text { display: none; }
+}
+
+/* ---------- Senza JavaScript ---------- */
+.no-js .tour { height: auto; }
+.no-js .tour__stage { position: relative; height: 100vh; height: 100svh; }
+.no-js .scene:not(:first-child),
+.no-js .progress { display: none; }
+
+/* ---------- Movimento ridotto ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .scene > * { transform: none; }
+  .tour__hint i { animation: none; transform: none; }
+  .tour__video { transition: none; }
+}
